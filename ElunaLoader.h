@@ -36,6 +36,22 @@ enum ElunaScriptCacheState
 
 struct LuaScript;
 
+// Represents a parsed manifest.lua entry (module name -> ordered list of relative file paths)
+struct LuaManifestModule
+{
+    std::string name;               // e.g. "rewards"
+    std::vector<std::string> files; // relative paths within the module, e.g. {"db", "core"}
+};
+
+// Top-level manifest descriptor parsed from lua_scripts/manifest.lua
+struct LuaManifest
+{
+    // Ordered list of modules (from the `modules` key)
+    std::vector<std::string> modules;
+    // Ordered list of bare files at root level (from the `files` key, optional)
+    std::vector<std::string> files;
+};
+
 class ElunaLoader
 {
 private:
@@ -67,11 +83,30 @@ public:
 
 private:
     void ReloadScriptCache();
+
+    // --- Manifest-based loading (new) ---
+    // Returns true if a manifest.lua exists at the root of the script folder.
+    bool HasRootManifest(const std::string& rootPath) const;
+    // Parse the root manifest.lua. Returns false on parse error.
+    bool ParseRootManifest(lua_State* L, const std::string& rootPath, LuaManifest& out) const;
+    // Parse a module-level manifest.lua. Returns false on parse error.
+    bool ParseModuleManifest(lua_State* L, const std::string& modulePath, LuaManifestModule& out) const;
+    // Load scripts declared in the root manifest (and each module's manifest).
+    void LoadFromManifest(lua_State* L, const std::string& rootPath, const LuaManifest& manifest);
+    // Load a single module: reads its manifest.lua if present, else falls back to sorted scan.
+    void LoadModule(lua_State* L, const std::string& rootPath, const std::string& moduleName);
+    // Load a single file by its full key (e.g. "rewards/core"), resolving extensions automatically.
+    void LoadManifestFile(lua_State* L, const std::string& rootPath, const std::string& fileKey, int32 mapId = -1);
+
+    // --- Legacy scan-based loading (unchanged, used as fallback) ---
     void ReadFiles(lua_State* L, std::string path);
     void CombineLists();
     void ProcessScript(lua_State* L, std::string filename, const size_t& filesize, const std::string& fullpath, int32 mapId);
     bool CompileScript(lua_State* L, LuaScript& script);
     static int LoadBytecodeChunk(lua_State* L, uint8* bytes, size_t len, BytecodeBuffer* buffer);
+
+    // Whether the last load was manifest-driven (for logging)
+    bool m_usedManifest = false;
 
     std::atomic<uint8> m_cacheState;
     std::vector<LuaScript> m_scriptCache;
