@@ -135,22 +135,38 @@ void Eluna::OnChange(Weather* /*weather*/, uint32 zone, WeatherState state, floa
 }
 
 // Auction House
+namespace
+{
+    struct AuctionEntryData
+    {
+        Player* owner;
+        Item* item;
+        uint32 expiretime;
+    };
+
+    AuctionEntryData GetAuctionEntryData(AuctionEntry* entry)
+    {
+        AuctionEntryData data;
+#if defined ELUNA_TRINITY
+        data.owner = eObjectAccessor()FindPlayerByLowGUID(entry->owner);
+        data.item = eAuctionMgr->GetAItem(entry->itemGUIDLow);
+        data.expiretime = entry->expire_time;
+#elif defined ELUNA_AZEROTHCORE
+        data.owner = eObjectAccessor()FindPlayer(entry->owner);
+        data.item = eAuctionMgr->GetAItem(entry->item_guid);
+        data.expiretime = entry->expire_time;
+#else
+        data.owner = eObjectAccessor()FindPlayer(MAKE_NEW_GUID(entry->owner, 0, HIGHGUID_PLAYER));
+        data.item = eAuctionMgr->GetAItem(entry->itemGuidLow);
+        data.expiretime = entry->expireTime;
+#endif
+        return data;
+    }
+}
+
 void Eluna::OnAdd(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 {
-#if defined ELUNA_TRINITY
-    Player* owner = eObjectAccessor()FindPlayerByLowGUID(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->itemGUIDLow);
-    uint32 expiretime = entry->expire_time;
-#elif defined ELUNA_AZEROTHCORE
-    Player* owner = eObjectAccessor()FindPlayer(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->item_guid);
-    uint32 expiretime = entry->expire_time;
-#else
-    Player* owner = eObjectAccessor()FindPlayer(MAKE_NEW_GUID(entry->owner, 0, HIGHGUID_PLAYER));
-    Item* item = eAuctionMgr->GetAItem(entry->itemGuidLow);
-    uint32 expiretime = entry->expireTime;
-#endif
-
+    auto [owner, item, expiretime] = GetAuctionEntryData(entry);
     if (!owner || !item)
         return;
 
@@ -168,21 +184,7 @@ void Eluna::OnAdd(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 
 void Eluna::OnRemove(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 {
-#if defined ELUNA_TRINITY
-    Player* owner = eObjectAccessor()FindPlayerByLowGUID(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->itemGUIDLow);
-    uint32 expiretime = entry->expire_time;
-#elif defined ELUNA_AZEROTHCORE
-    Player* owner = eObjectAccessor()FindPlayer(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->item_guid);
-    uint32 expiretime = entry->expire_time;
-#else
-    Player* owner = eObjectAccessor()FindPlayer(MAKE_NEW_GUID(entry->owner, 0, HIGHGUID_PLAYER));
-    Item* item = eAuctionMgr->GetAItem(entry->itemGuidLow);
-    uint32 expiretime = entry->expireTime;
-#endif
-
-
+    auto [owner, item, expiretime] = GetAuctionEntryData(entry);
     if (!owner || !item)
         return;
 
@@ -200,20 +202,7 @@ void Eluna::OnRemove(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 
 void Eluna::OnSuccessful(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 {
-#if defined ELUNA_TRINITY
-    Player* owner = eObjectAccessor()FindPlayerByLowGUID(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->itemGUIDLow);
-    uint32 expiretime = entry->expire_time;
-#elif defined ELUNA_AZEROTHCORE
-    Player* owner = eObjectAccessor()FindPlayer(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->item_guid);
-    uint32 expiretime = entry->expire_time;
-#else
-    Player* owner = eObjectAccessor()FindPlayer(MAKE_NEW_GUID(entry->owner, 0, HIGHGUID_PLAYER));
-    Item* item = eAuctionMgr->GetAItem(entry->itemGuidLow);
-    uint32 expiretime = entry->expireTime;
-#endif
-
+    auto [owner, item, expiretime] = GetAuctionEntryData(entry);
     if (!owner || !item)
         return;
 
@@ -231,20 +220,7 @@ void Eluna::OnSuccessful(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 
 void Eluna::OnExpire(AuctionHouseObject* /*ah*/, AuctionEntry* entry)
 {
-#if defined ELUNA_TRINITY
-    Player* owner = eObjectAccessor()FindPlayerByLowGUID(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->itemGUIDLow);
-    uint32 expiretime = entry->expire_time;
-#elif defined ELUNA_AZEROTHCORE
-    Player* owner = eObjectAccessor()FindPlayer(entry->owner);
-    Item* item = eAuctionMgr->GetAItem(entry->item_guid);
-    uint32 expiretime = entry->expire_time;
-#else
-    Player* owner = eObjectAccessor()FindPlayer(MAKE_NEW_GUID(entry->owner, 0, HIGHGUID_PLAYER));
-    Item* item = eAuctionMgr->GetAItem(entry->itemGuidLow);
-    uint32 expiretime = entry->expireTime;
-#endif
-
+    auto [owner, item, expiretime] = GetAuctionEntryData(entry);
     if (!owner || !item)
         return;
 

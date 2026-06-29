@@ -291,4 +291,34 @@ void Eluna::CallAllFunctionsTable(BindingMap<K1>* bindings1, BindingMap<K2>* bin
     CleanUpStack(number_of_arguments);
 }
 
+/*
+ * Shared callback body for all OnChat hooks.
+ * Calls all handlers expecting 2 returns: (bool cancelMessage, string newMsg).
+ * Uses "sticky false" semantics: once any handler returns false, result stays false.
+ */
+template<typename K>
+bool Eluna::ChatHandlerBody(BindingMap<K>* bindings, const K& key, std::string& msg)
+{
+    bool result = true;
+    int number_of_arguments = this->push_counter;
+    int number_of_functions = SetupStack(bindings, key, number_of_arguments);
+
+    while (number_of_functions > 0)
+    {
+        int r = CallOneFunction(number_of_functions, number_of_arguments, 2);
+        --number_of_functions;
+
+        if (lua_isboolean(L, r + 0) && !lua_toboolean(L, r + 0))
+            result = false;
+
+        if (lua_isstring(L, r + 1))
+            msg = std::string(lua_tostring(L, r + 1));
+
+        lua_pop(L, 2);
+    }
+
+    CleanUpStack(number_of_arguments);
+    return result;
+}
+
 #endif // _HOOK_HELPERS_H

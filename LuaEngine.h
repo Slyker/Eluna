@@ -252,6 +252,7 @@ private:
     {
         CallAllFunctionsTable<K, K, T>(bindings, NULL, key, key, list);
     }
+    template<typename K> bool ChatHandlerBody(BindingMap<K>* bindings, const K& key, std::string& msg);
     // Non-static pushes, to be used in hooks.
     // They up the pushed value counter for hook helper functions.
     void HookPush()                                 { Push(); ++push_counter; }
