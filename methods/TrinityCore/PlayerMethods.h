@@ -4168,7 +4168,7 @@ namespace LuaPlayer
         { "GroupCreate", &LuaPlayer::GroupCreate, METHOD_REG_WORLD }, // World state method only in multistate
         { "SendCinematicStart", &LuaPlayer::SendCinematicStart },
         { "SendMovieStart", &LuaPlayer::SendMovieStart },
-        { "RunCommand", &LuaPlayer::RunCommand },
+        { "RunCommand", &LuaPlayer::RunCommand, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
 
         // Not implemented methods
         { "GetHonorStoredKills", METHOD_REG_NONE }, // classic only

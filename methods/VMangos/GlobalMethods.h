@@ -2985,14 +2985,14 @@ namespace LuaGlobalFunctions
 
         // Other
         { "ReloadEluna", &LuaGlobalFunctions::ReloadEluna },
-        { "RunCommand", &LuaGlobalFunctions::RunCommand },
+        { "RunCommand", &LuaGlobalFunctions::RunCommand, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
         { "SendWorldMessage", &LuaGlobalFunctions::SendWorldMessage },
         { "WorldDBQuery", &LuaGlobalFunctions::WorldDBQuery, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
-        { "WorldDBExecute", &LuaGlobalFunctions::WorldDBExecute },
+        { "WorldDBExecute", &LuaGlobalFunctions::WorldDBExecute, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
         { "CharDBQuery", &LuaGlobalFunctions::CharDBQuery, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
-        { "CharDBExecute", &LuaGlobalFunctions::CharDBExecute },
+        { "CharDBExecute", &LuaGlobalFunctions::CharDBExecute, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
         { "AuthDBQuery", &LuaGlobalFunctions::AuthDBQuery, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
-        { "AuthDBExecute", &LuaGlobalFunctions::AuthDBExecute },
+        { "AuthDBExecute", &LuaGlobalFunctions::AuthDBExecute, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
         { "CreateLuaEvent", &LuaGlobalFunctions::CreateLuaEvent },
         { "RemoveEventById", &LuaGlobalFunctions::RemoveEventById },
         { "RemoveEvents", &LuaGlobalFunctions::RemoveEvents },

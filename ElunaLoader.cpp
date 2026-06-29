@@ -243,7 +243,8 @@ bool ElunaLoader::CompileScript(lua_State* L, LuaScript& script)
     int err = 0;
     if (script.fileext == ".moon")
     {
-        std::string str = "return require('moonscript').loadfile([[" + script.filepath+ "]])";
+        // Use a long string delimiter that cannot appear in filesystem paths
+        std::string str = "return require('moonscript').loadfile([==[" + script.filepath + "]==])";
         err = luaL_dostring(L, str.c_str());
     } else
         err = luaL_loadfile(L, script.filepath.c_str());
