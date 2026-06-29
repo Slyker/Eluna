@@ -44,24 +44,8 @@ void Eluna::OnSkillChange(Player* pPlayer, uint32 skillId, uint32 skillValue)
     HookPush(pPlayer);
     HookPush(skillId);
     HookPush(skillValue);
-    int valueIndex = lua_gettop(L) - 1;
-    int n = SetupStack(binding, key, 3);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 3, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            skillValue = CHECKVAL<uint32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(skillValue, valueIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(3);
+    int valueIndex = lua_gettop(L);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(skillValue), std::array<int, 1>{ valueIndex });
 }
 
 void Eluna::OnLearnSpell(Player* pPlayer, uint32 spellId)
@@ -263,23 +247,7 @@ void Eluna::OnMoneyChanged(Player* pPlayer, int32& amount)
     HookPush(pPlayer);
     HookPush(amount);
     int amountIndex = lua_gettop(L);
-    int n = SetupStack(binding, key, 2);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 2, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<int32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(2);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount), std::array<int, 1>{ amountIndex });
 }
 
 #if ELUNA_EXPANSION >= EXP_CATA
@@ -289,23 +257,10 @@ void Eluna::OnMoneyChanged(Player* pPlayer, int64& amount)
     HookPush(pPlayer);
     HookPush(amount);
     int amountIndex = lua_gettop(L);
-    int n = SetupStack(binding, key, 2);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 2, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<int32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(2);
+    // Note: original code uses CHECKVAL<int32> even for int64 overload
+    int32 amount32 = static_cast<int32>(amount);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount32), std::array<int, 1>{ amountIndex });
+    amount = amount32;
 }
 #endif
 
@@ -314,25 +269,9 @@ void Eluna::OnGiveXP(Player* pPlayer, uint32& amount, Unit* pVictim)
     START_HOOK(PLAYER_EVENT_ON_GIVE_XP);
     HookPush(pPlayer);
     HookPush(amount);
+    int amountIndex = lua_gettop(L);
     HookPush(pVictim);
-    int amountIndex = lua_gettop(L) - 1;
-    int n = SetupStack(binding, key, 3);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 3, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<uint32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(3);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount), std::array<int, 1>{ amountIndex });
 }
 
 void Eluna::OnReputationChange(Player* pPlayer, uint32 factionID, int32& standing, bool incremental)
@@ -341,25 +280,9 @@ void Eluna::OnReputationChange(Player* pPlayer, uint32 factionID, int32& standin
     HookPush(pPlayer);
     HookPush(factionID);
     HookPush(standing);
+    int standingIndex = lua_gettop(L);
     HookPush(incremental);
-    int standingIndex = lua_gettop(L) - 1;
-    int n = SetupStack(binding, key, 4);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 4, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            standing = CHECKVAL<int32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(standing, standingIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(4);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(standing), std::array<int, 1>{ standingIndex });
 }
 
 void Eluna::OnDuelRequest(Player* pTarget, Player* pChallenger)
@@ -530,28 +453,11 @@ bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg)
         return OnAddonMessage(pPlayer, type, msg, NULL, NULL, NULL, NULL);
 
     START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_CHAT, true);
-    bool result = true;
     HookPush(pPlayer);
     HookPush(msg);
     HookPush(type);
     HookPush(lang);
-    int n = SetupStack(binding, key, 4);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 4, 2);
-
-        if (lua_isboolean(L, r + 0) && !lua_toboolean(L, r + 0))
-            result = false;
-
-        if (lua_isstring(L, r + 1))
-            msg = std::string(lua_tostring(L, r + 1));
-
-        lua_pop(L, 2);
-    }
-
-    CleanUpStack(4);
-    return result;
+    return ChatHandlerBody(binding, key, msg);
 }
 
 bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, Group* pGroup)
@@ -560,29 +466,12 @@ bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, 
         return OnAddonMessage(pPlayer, type, msg, NULL, NULL, pGroup, NULL);
 
     START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_GROUP_CHAT, true);
-    bool result = true;
     HookPush(pPlayer);
     HookPush(msg);
     HookPush(type);
     HookPush(lang);
     HookPush(pGroup);
-    int n = SetupStack(binding, key, 5);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 5, 2);
-
-        if (lua_isboolean(L, r + 0) && !lua_toboolean(L, r + 0))
-            result = false;
-
-        if (lua_isstring(L, r + 1))
-            msg = std::string(lua_tostring(L, r + 1));
-
-        lua_pop(L, 2);
-    }
-
-    CleanUpStack(5);
-    return result;
+    return ChatHandlerBody(binding, key, msg);
 }
 
 bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, Guild* pGuild)
@@ -591,29 +480,12 @@ bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, 
         return OnAddonMessage(pPlayer, type, msg, NULL, pGuild, NULL, NULL);
 
     START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_GUILD_CHAT, true);
-    bool result = true;
     HookPush(pPlayer);
     HookPush(msg);
     HookPush(type);
     HookPush(lang);
     HookPush(pGuild);
-    int n = SetupStack(binding, key, 5);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 5, 2);
-
-        if (lua_isboolean(L, r + 0) && !lua_toboolean(L, r + 0))
-            result = false;
-
-        if (lua_isstring(L, r + 1))
-            msg = std::string(lua_tostring(L, r + 1));
-
-        lua_pop(L, 2);
-    }
-
-    CleanUpStack(5);
-    return result;
+    return ChatHandlerBody(binding, key, msg);
 }
 
 bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, Channel* pChannel)
@@ -622,29 +494,12 @@ bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, 
         return OnAddonMessage(pPlayer, type, msg, NULL, NULL, NULL, pChannel);
 
     START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_CHANNEL_CHAT, true);
-    bool result = true;
     HookPush(pPlayer);
     HookPush(msg);
     HookPush(type);
     HookPush(lang);
     HookPush(pChannel->GetChannelId());
-    int n = SetupStack(binding, key, 5);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 5, 2);
-
-        if (lua_isboolean(L, r + 0) && !lua_toboolean(L, r + 0))
-            result = false;
-
-        if (lua_isstring(L, r + 1))
-            msg = std::string(lua_tostring(L, r + 1));
-
-        lua_pop(L, 2);
-    }
-
-    CleanUpStack(5);
-    return result;
+    return ChatHandlerBody(binding, key, msg);
 }
 
 bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, Player* pReceiver)
@@ -653,27 +508,10 @@ bool Eluna::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg, 
         return OnAddonMessage(pPlayer, type, msg, pReceiver, NULL, NULL, NULL);
 
     START_HOOK_WITH_RETVAL(PLAYER_EVENT_ON_WHISPER, true);
-    bool result = true;
     HookPush(pPlayer);
     HookPush(msg);
     HookPush(type);
     HookPush(lang);
     HookPush(pReceiver);
-    int n = SetupStack(binding, key, 5);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 5, 2);
-
-        if (lua_isboolean(L, r + 0) && !lua_toboolean(L, r + 0))
-            result = false;
-
-        if (lua_isstring(L, r + 1))
-            msg = std::string(lua_tostring(L, r + 1));
-
-        lua_pop(L, 2);
-    }
-
-    CleanUpStack(5);
-    return result;
+    return ChatHandlerBody(binding, key, msg);
 }

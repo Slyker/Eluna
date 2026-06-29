@@ -74,25 +74,9 @@ void Eluna::OnMemberWitdrawMoney(Guild* guild, Player* player, uint32& amount, b
     HookPush(guild);
     HookPush(player);
     HookPush(amount);
+    int amountIndex = lua_gettop(L);
     HookPush(isRepair); // isRepair not a part of Mangos, implement?
-    int amountIndex = lua_gettop(L) - 1;
-    int n = SetupStack(binding, key, 4);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 4, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<uint32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(4);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount), std::array<int, 1>{ amountIndex });
 }
 
 #if ELUNA_EXPANSION >= EXP_CATA
@@ -102,25 +86,12 @@ void Eluna::OnMemberWitdrawMoney(Guild* guild, Player* player, uint64& amount, b
     HookPush(guild);
     HookPush(player);
     HookPush(amount);
+    int amountIndex = lua_gettop(L);
     HookPush(isRepair); // isRepair not a part of Mangos, implement?
-    int amountIndex = lua_gettop(L) - 1;
-    int n = SetupStack(binding, key, 4);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 4, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<uint32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(4);
+    // Note: original code uses CHECKVAL<uint32> even for uint64 overload
+    uint32 amount32 = static_cast<uint32>(amount);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount32), std::array<int, 1>{ amountIndex });
+    amount = amount32;
 }
 #endif
 
@@ -131,23 +102,7 @@ void Eluna::OnMemberDepositMoney(Guild* guild, Player* player, uint32& amount)
     HookPush(player);
     HookPush(amount);
     int amountIndex = lua_gettop(L);
-    int n = SetupStack(binding, key, 3);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 3, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<uint32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(3);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount), std::array<int, 1>{ amountIndex });
 }
 
 #if ELUNA_EXPANSION >= EXP_CATA
@@ -158,23 +113,10 @@ void Eluna::OnMemberDepositMoney(Guild* guild, Player* player, uint64& amount)
     HookPush(player);
     HookPush(amount);
     int amountIndex = lua_gettop(L);
-    int n = SetupStack(binding, key, 3);
-
-    while (n > 0)
-    {
-        int r = CallOneFunction(n--, 3, 1);
-
-        if (lua_isnumber(L, r))
-        {
-            amount = CHECKVAL<uint32>(r);
-            // Update the stack for subsequent calls.
-            ReplaceArgument(amount, amountIndex);
-        }
-
-        lua_pop(L, 1);
-    }
-
-    CleanUpStack(3);
+    // Note: original code uses CHECKVAL<uint32> even for uint64 overload
+    uint32 amount32 = static_cast<uint32>(amount);
+    CallAllFunctionsMultiReturn(binding, key, std::tie(amount32), std::array<int, 1>{ amountIndex });
+    amount = amount32;
 }
 #endif
 
