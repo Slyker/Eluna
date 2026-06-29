@@ -120,7 +120,7 @@ void ElunaLoader::LoadScripts()
     const std::string& lua_cpath_extra = sElunaConfig->GetConfig(CONFIG_ELUNA_REQUIRE_CPATH_EXTRA);
     
 #if !defined ELUNA_WINDOWS
-    if (lua_folderpath[0] == '~')
+    if (!lua_folderpath.empty() && lua_folderpath[0] == '~')
         if (const char* home = getenv("HOME"))
             lua_folderpath.replace(0, 1, home);
 #endif
@@ -129,6 +129,12 @@ void ElunaLoader::LoadScripts()
 
     // open a new temporary Lua state to compile bytecode in
     lua_State* L = luaL_newstate();
+    if (!L)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Failed to create Lua state for script compilation (out of memory)");
+        m_cacheState = SCRIPT_CACHE_READY;
+        return;
+    }
     luaL_openlibs(L);
 
     // clear all cache variables
@@ -180,17 +186,28 @@ void ElunaLoader::ReadFiles(lua_State* L, std::string path)
     fs::path someDir(path);
     fs::directory_iterator end_iter;
 
-    if (fs::exists(someDir) && fs::is_directory(someDir) && !fs::is_empty(someDir))
+    try
     {
-        m_requirePath +=
-            path + "/?.lua;" +
-            path + "/?.ext;" +
-            path + "/?.moon;";
+        if (!fs::exists(someDir) || !fs::is_directory(someDir) || fs::is_empty(someDir))
+            return;
+    }
+    catch (const std::exception& e)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Error checking script path `%s`: %s", path.c_str(), e.what());
+        return;
+    }
 
-        m_requirecPath +=
-            path + "/?.dll;" +
-            path + "/?.so;";
+    m_requirePath +=
+        path + "/?.lua;" +
+        path + "/?.ext;" +
+        path + "/?.moon;";
 
+    m_requirecPath +=
+        path + "/?.dll;" +
+        path + "/?.so;";
+
+    try
+    {
         for (fs::directory_iterator dir_iter(someDir); dir_iter != end_iter; ++dir_iter)
         {
             std::string fullpath = dir_iter->path().generic_string();
@@ -234,6 +251,10 @@ void ElunaLoader::ReadFiles(lua_State* L, std::string path)
                 ProcessScript(L, filename, filesize, fullpath, mapId);
             }
         }
+    }
+    catch (const std::exception& e)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Error reading scripts from `%s`: %s", path.c_str(), e.what());
     }
 }
 
@@ -320,7 +341,7 @@ void ElunaLoader::InitializeFileWatcher()
     }
     else
     {
-        ELUNA_LOG_INFO("[Eluna]: Failed to initialize the script reloader on `%s`.", lua_folderpath.c_str());
+        ELUNA_LOG_ERROR("[Eluna]: Failed to initialize the script reloader on `%s`. Hot-reloading will not work.", lua_folderpath.c_str());
     }
 
     lua_fileWatcher.watch();

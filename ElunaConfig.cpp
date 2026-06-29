@@ -114,12 +114,16 @@ void ElunaConfig::TokenizeAllowedMaps()
             return std::isspace(static_cast<unsigned char>(c));
             }), mapIdStr.end());
 
+        // skip empty tokens (e.g. from trailing commas or consecutive delimiters)
+        if (mapIdStr.empty())
+            continue;
+
         try {
             uint32 mapId = std::stoul(mapIdStr);
             m_allowedMaps.emplace(mapId);
         }
-        catch (std::exception&) {
-            ELUNA_LOG_ERROR("[Eluna]: Error tokenizing Eluna.OnlyOnMaps, invalid config value '%s'", mapIdStr.c_str());
+        catch (const std::exception& e) {
+            ELUNA_LOG_ERROR("[Eluna]: Error tokenizing Eluna.OnlyOnMaps, invalid config value '%s': %s", mapIdStr.c_str(), e.what());
         }
     }
 }
