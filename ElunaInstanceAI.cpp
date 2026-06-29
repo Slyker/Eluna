@@ -76,11 +76,16 @@ void ElunaInstanceAI::Load(const char* data)
             }
             else
             {
-                ELUNA_LOG_ERROR("Error while loading instance data: Expected data to be a table (type 5), got type %d instead", lua_type(L, -1));
+                ELUNA_LOG_ERROR("[Eluna]: Error loading instance data: Expected table (type 5), got type %d instead", lua_type(L, -1));
                 lua_pop(L, 1);
                 // Stack: (empty)
 
-#if !defined ELUNA_TRINITY
+#if defined ELUNA_TRINITY
+                // Create a fresh table so the instance has valid data
+                lua_newtable(L);
+                instance->GetEluna()->CreateInstanceData(instance);
+                instance->GetEluna()->OnLoad(this);
+#else
                 Initialize();
 #endif
             }
@@ -88,11 +93,16 @@ void ElunaInstanceAI::Load(const char* data)
         else
         {
             // Stack: error_message
-            ELUNA_LOG_ERROR("Error while parsing instance data with lua-marshal: %s", lua_tostring(L, -1));
+            ELUNA_LOG_ERROR("[Eluna]: Error parsing instance data with lua-marshal: %s", lua_tostring(L, -1) ? lua_tostring(L, -1) : "(unknown error)");
             lua_pop(L, 1);
             // Stack: (empty)
 
-#if !defined ELUNA_TRINITY
+#if defined ELUNA_TRINITY
+            // Create a fresh table so the instance has valid data
+            lua_newtable(L);
+            instance->GetEluna()->CreateInstanceData(instance);
+            instance->GetEluna()->OnLoad(this);
+#else
             Initialize();
 #endif
         }
@@ -101,9 +111,14 @@ void ElunaInstanceAI::Load(const char* data)
     }
     else
     {
-        ELUNA_LOG_ERROR("Error while decoding instance data: Data is not valid base-64");
+        ELUNA_LOG_ERROR("[Eluna]: Error decoding instance data: Data is not valid base-64");
 
-#if !defined ELUNA_TRINITY
+#if defined ELUNA_TRINITY
+        // Create a fresh table so the instance has valid data
+        lua_newtable(L);
+        instance->GetEluna()->CreateInstanceData(instance);
+        instance->GetEluna()->OnLoad(this);
+#else
         Initialize();
 #endif
     }
@@ -130,7 +145,8 @@ const char* ElunaInstanceAI::Save() const
     if (lua_pcall(L, 1, 1, 0) != 0)
     {
         // Stack: error_message
-        ELUNA_LOG_ERROR("Error while saving: %s", lua_tostring(L, -1));
+        const char* err = lua_tostring(L, -1);
+        ELUNA_LOG_ERROR("[Eluna]: Error while saving instance data: %s", err ? err : "(unknown error)");
         lua_pop(L, 1);
         return NULL;
     }
@@ -138,6 +154,14 @@ const char* ElunaInstanceAI::Save() const
     // Stack: data
     size_t dataLength;
     const unsigned char* data = (const unsigned char*)lua_tolstring(L, -1, &dataLength);
+
+    if (!data || dataLength == 0)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Error while saving instance data: lua-marshal returned invalid data");
+        lua_pop(L, 1);
+        return NULL;
+    }
+
     ElunaUtil::EncodeData(data, dataLength, self->lastSaveData);
 
     lua_pop(L, 1);

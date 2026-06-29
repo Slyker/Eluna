@@ -31,6 +31,12 @@ extern void RegisterMethods(Eluna* E);
 
 void Eluna::_ReloadEluna()
 {
+    if (!eventMgr)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Cannot reload, event manager is not initialized");
+        return;
+    }
+
     // Remove all timed events
     eventMgr->SetAllEventStates(LUAEVENT_STATE_ERASE);
 
@@ -74,7 +80,8 @@ Eluna::~Eluna()
 
 void Eluna::CloseLua()
 {
-    OnLuaStateClose();
+    if (L)
+        OnLuaStateClose();
 
     DestroyBindStores();
 
@@ -91,7 +98,10 @@ static int PrecompiledLoader(lua_State* L)
 {
     const char* modname = lua_tostring(L, 1);
     if (modname == NULL)
-        return 0;
+    {
+        lua_pushstring(L, "\n\tprecompiled loader received a nil module name");
+        return 1;
+    }
 
     const std::vector<LuaScript>& scripts = sElunaLoader->GetLuaScripts();
 
@@ -114,6 +124,11 @@ static int PrecompiledLoader(lua_State* L)
 void Eluna::OpenLua()
 {
     L = luaL_newstate();
+    if (!L)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Failed to create a new Lua state (out of memory)");
+        return;
+    }
 
     lua_pushlightuserdata(L, this);
     lua_setfield(L, LUA_REGISTRYINDEX, ELUNA_STATE_PTR);
@@ -211,6 +226,12 @@ void Eluna::RegisterHookGlobals(lua_State* _L)
 
 void Eluna::RunScripts()
 {
+    if (!L)
+    {
+        ELUNA_LOG_ERROR("[Eluna]: Cannot run scripts, Lua state is not initialized");
+        return;
+    }
+
     int32 const boundMapId = GetBoundMapId();
     uint32 const boundInstanceId = GetBoundInstanceId();
     ELUNA_LOG_DEBUG("[Eluna]: Running scripts for state: %i, instance: %u", boundMapId, boundInstanceId);
@@ -274,7 +295,7 @@ void Eluna::InvalidateObjects()
 void Eluna::Report(lua_State* _L)
 {
     const char* msg = lua_tostring(_L, -1);
-    ELUNA_LOG_ERROR("%s", msg);
+    ELUNA_LOG_ERROR("%s", msg ? msg : "(unknown error)");
     lua_pop(_L, 1);
 }
 
