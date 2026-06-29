@@ -1,0 +1,13 @@
+#ifndef _SHARED_DEFINES_STUB_H
+#define _SHARED_DEFINES_STUB_H
+
+enum AccountTypes
+{
+    SEC_PLAYER = 0,
+    SEC_MODERATOR = 1,
+    SEC_GAMEMASTER = 2,
+    SEC_ADMINISTRATOR = 3,
+    SEC_CONSOLE = 4
+};
+
+#endif // _SHARED_DEFINES_STUB_H
