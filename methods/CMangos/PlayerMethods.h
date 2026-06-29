@@ -4048,7 +4048,7 @@ namespace LuaPlayer
         { "ResetAchievements", METHOD_REG_NONE },
         { "SendMovieStart", METHOD_REG_NONE },
 #endif
-        { "RunCommand", &LuaPlayer::RunCommand },
+        { "RunCommand", &LuaPlayer::RunCommand, METHOD_REG_ALL, METHOD_FLAG_UNSAFE },
 
         // Not implemented methods
         { "GetChampioningFaction", METHOD_REG_NONE }, // ACore & TC only

@@ -35,7 +35,7 @@ void ElunaConfig::Initialize()
     SetConfig(CONFIG_ELUNA_ENABLED, "Eluna.Enabled", true);
     SetConfig(CONFIG_ELUNA_TRACEBACK, "Eluna.TraceBack", false);
     SetConfig(CONFIG_ELUNA_SCRIPT_RELOADER, "Eluna.ScriptReloader", false);
-    SetConfig(CONFIG_ELUNA_ENABLE_UNSAFE, "Eluna.UseUnsafeMethods", true);
+    SetConfig(CONFIG_ELUNA_ENABLE_UNSAFE, "Eluna.UseUnsafeMethods", false);
     SetConfig(CONFIG_ELUNA_ENABLE_DEPRECATED, "Eluna.UseDeprecatedMethods", true);
     SetConfig(CONFIG_ELUNA_ENABLE_RELOAD_COMMAND, "Eluna.ReloadCommand", true);
 
